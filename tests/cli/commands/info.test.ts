@@ -22,6 +22,7 @@ function infoTargetBase(target: string): string {
   if (target === "pi") return join(xdg, "pi-agent");
   if (target === "dsh") return join(xdg, "dsh");
   if (target === "codex") return join(xdg, "codex");
+  if (target === "vibe") return join(xdg, "vibe");
   throw new Error(`Unknown sync target: "${target}". Supported targets: opencode, pi, dsh, codex`);
 }
 

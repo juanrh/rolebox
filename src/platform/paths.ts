@@ -119,3 +119,28 @@ export function codexPlatformPaths(): PlatformPaths {
     skillsDir: join(codexHome, "skills"),
   };
 }
+
+/**
+ * Returns platform paths for the Mistral Vibe CLI platform.
+ *
+ * Per Vibe's documented environment variables, the Vibe home directory
+ * resolves as `$VIBE_HOME` when set (non-blank), otherwise `~/.vibe`; a blank
+ * env value is treated as unset.
+ *
+ * - `configDir`: Vibe home (`$VIBE_HOME` or `~/.vibe`)
+ * - `agentsDir`: `{configDir}/agents` (native custom-agent TOML files)
+ * - `skillsDir`: `{configDir}/skills` (user-level skills)
+ *
+ * Vibe has no rolebox-owned sessions directory, so `sessionsDir` is omitted.
+ */
+export function vibePlatformPaths(): PlatformPaths {
+  const vibeHome = process.env.VIBE_HOME?.trim()
+    ? process.env.VIBE_HOME
+    : join(os.homedir(), ".vibe");
+  return {
+    platformId: "vibe",
+    configDir: vibeHome,
+    agentsDir: join(vibeHome, "agents"),
+    skillsDir: join(vibeHome, "skills"),
+  };
+}

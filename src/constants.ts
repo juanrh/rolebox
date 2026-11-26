@@ -102,6 +102,7 @@ export const SyncTarget = {
   Pi: "pi",
   Dsh: "dsh",
   Codex: "codex",
+  Vibe: "vibe",
 } as const;
 
 /** All valid SyncTarget values, for runtime validation and cleanup sweeps. */

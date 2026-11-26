@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  One plugin for <a href="https://github.com/sst/opencode">opencode</a>, <a href="https://pi.dev">pi</a>, <a href="https://www.npmjs.com/package/@deepseek-ai/dsh">dsh</a> and <a href="docs/codex.md">Codex</a>.
+  One plugin for <a href="https://github.com/sst/opencode">opencode</a>, <a href="https://pi.dev">pi</a>, <a href="https://www.npmjs.com/package/@deepseek-ai/dsh">dsh</a>, <a href="docs/codex.md">Codex</a> and <a href="docs/vibe.md">Mistral Vibe</a>.
 </p>
 
 <p align="center">
@@ -189,6 +189,7 @@ rolebox runs on four harnesses. A `rolebox/` directory in the **current working 
 | [pi](https://pi.dev) | `~/.pi/agent` | `~/.pi/agent/rolebox` | `~/.pi/agent/skills` | `PI_CODING_AGENT_DIR` |
 | [dsh](https://www.npmjs.com/package/@deepseek-ai/dsh) | `~/.dsh` | `~/.dsh/rolebox` | `~/.dsh/skills` | `DSH_HOME` |
 | [Codex](docs/codex.md) | `~/.codex` | `~/.codex/rolebox` | `~/.codex/skills` | `CODEX_HOME` |
+| [Vibe](docs/vibe.md) | `~/.vibe` | `~/.vibe/rolebox` | `~/.vibe/skills` | `VIBE_HOME` |
 
 ### opencode
 
@@ -249,6 +250,21 @@ after its turn ends. Otherwise, use `graph_wait` as the fallback instead of poll
 `graph_status`. An external UI-owned stdio conversation needs its own host connection
 before background notifications can wake it.
 Details and supported boundaries: [docs/codex.md](docs/codex.md).
+
+### Vibe
+
+```bash
+npm install -g rolebox     # or run from a checkout built with `npm run build`
+rolebox sync vibe
+```
+
+`rolebox sync vibe` registers the rolebox stdio MCP server in `$VIBE_HOME/config.toml`
+(`~/.vibe/config.toml` by default) as a managed `[[mcp_servers]]` block, deploys installed
+roles and generates public native agents under `$VIBE_HOME/agents`. Restart Vibe, then
+ask it to delegate using a generated agent such as `rolebox--reviewer`. The MCP runtime
+exposes the canonical rolebox tools (prefixed `rolebox_`); session, dispatch and graph
+tools are unavailable because Vibe documents no session protocol. Details:
+[docs/vibe.md](docs/vibe.md).
 
 <details>
 <summary><strong>Deprecated entry paths</strong></summary>

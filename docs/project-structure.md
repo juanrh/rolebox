@@ -56,6 +56,10 @@ src/platform/
     │   ├── installation/
     │   ├── graph/
     │   └── desktop/
+    ├── vibe/
+    │   ├── index.ts
+    │   ├── runtime.ts
+    │   └── installation/
     ├── opencode/
     └── opencode2/
 ```

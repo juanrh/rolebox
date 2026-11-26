@@ -127,6 +127,26 @@ export function codexCapabilities(): PlatformCapabilities {
   };
 }
 
+
+/**
+ * Capabilities for the Mistral Vibe CLI platform.
+ *
+ * Vibe extends through a stdio MCP server, native agent files and user-level
+ * skills, but documents no programmatic session protocol: rolebox cannot
+ * browse, fork or spawn Vibe sessions, so every session-execution flag stays
+ * off and dispatch/graph surfaces are not assembled for this host. Agent
+ * FILE sync is the one host-side registration rolebox owns besides the MCP
+ * server.
+ */
+export function vibeCapabilities(): PlatformCapabilities {
+  return {
+    platformId: "vibe", hasBackgroundTasks: false, hasSessionFork: false,
+    hasSessionCreate: false, hasSessionAbort: false, hasAgentFileSync: true,
+    hasMultiStepTools: true, hasEventStream: false, hasSessionStatus: false,
+    hasRoleSwitch: false,
+  };
+}
+
 /**
  * Capabilities declared for the opencode **v2** plugin surface
  * (`@opencode/plugin@2.0.18`, consumed by `src/entries/opencode2.ts`).

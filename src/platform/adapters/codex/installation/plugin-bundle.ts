@@ -26,6 +26,13 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDirSymlink } from "../../../../utils/symlink.ts";
 import { PLUGIN_ID } from "../../../../constants.ts";
+import {
+  applyManagedBlock,
+  escapeTomlString,
+  removeManagedBlock,
+} from "../../../managed-config-block.ts";
+
+export { escapeTomlString };
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -66,36 +73,12 @@ export interface CodexPluginBundlePaths {
   serverEntryExists: boolean;
 }
 
-// ── Managed config block ────────────────────────────────────────────────────
+// ── Managed config block ──────────────────────────────────────────────────────
 
 const MANAGED_START =
   "# >>> rolebox (managed) — do not edit; `rolebox sync codex` rewrites this block >>>";
 const MANAGED_END = "# <<< rolebox (managed) <<<";
-
-// TOML basic strings have a fixed short-escape set; every other control
-// character (C0 plus DEL) must be written as \uXXXX or the document is invalid.
-const TOML_STRING_ESCAPES: Record<string, string> = {
-  "\b": "\\b",
-  "\t": "\\t",
-  "\n": "\\n",
-  "\f": "\\f",
-  "\r": "\\r",
-  '"': '\\"',
-  "\\": "\\\\",
-};
-
-/**
- * Escape a TOML basic-string value: the named short escapes (\b \t \n \f \r
- * \" \\) plus \uXXXX for every other control character. The marketplace root
- * comes from the user's home directory, so an embedded newline or tab must not
- * be able to produce an unparseable config.toml.
- */
-export function escapeTomlString(value: string): string {
-  return value.replace(/["\\\u0000-\u001f\u007f]/g, (char) => {
-    const escape = TOML_STRING_ESCAPES[char];
-    return escape ?? `\\u${char.charCodeAt(0).toString(16).toUpperCase().padStart(4, "0")}`;
-  });
-}
+const CODEX_MANAGED_MARKERS = { start: MANAGED_START, end: MANAGED_END };
 
 /** The managed `config.toml` block for a marketplace root. */
 function buildManagedBlock(marketplaceDir: string): string {
@@ -108,123 +91,6 @@ function buildManagedBlock(marketplaceDir: string): string {
     "enabled = true",
     MANAGED_END,
   ].join("\n");
-}
-
-/** A managed block's byte range in a config file. */
-interface ManagedRegion {
-  /** First byte of the start-marker line (indentation included). */
-  start: number;
-  /** Exclusive end of the end-marker line; does NOT consume its newline. */
-  end: number;
-}
-
-/** Delimiter that opened the multi-line TOML string the scanner is inside. */
-type MultilineStringDelimiter = '"""' | "'''";
-
-/** Index just past the single-line string starting at `start` (basic or literal). */
-function skipSingleLineString(line: string, start: number): number {
-  const quote = line[start];
-  let index = start + 1;
-  while (index < line.length) {
-    if (quote === '"' && line[index] === "\\") {
-      index += 2;
-      continue;
-    }
-    if (line[index] === quote) return index + 1;
-    index++;
-  }
-  return index;
-}
-
-/**
- * Advance the multi-line string state across one physical line. Comments and
- * single-line strings are skipped, so a triple quote in either cannot swallow
- * the rest of the file. Multi-line basic strings honour backslash escapes,
- * literal strings do not, and content after a delimiter closed on the same
- * line is scanned normally.
- */
-function advanceMultilineStringState(
-  line: string,
-  state: MultilineStringDelimiter | null,
-): MultilineStringDelimiter | null {
-  let index = 0;
-  while (index < line.length) {
-    if (state !== null) {
-      if (state === '"""' && line[index] === "\\") {
-        index += 2;
-        continue;
-      }
-      if (line.startsWith(state, index)) {
-        state = null;
-        index += 3;
-        continue;
-      }
-      index++;
-      continue;
-    }
-
-    const char = line[index];
-    if (char === "#") return null;
-    if (char === '"' || char === "'") {
-      const delimiter: MultilineStringDelimiter = char === '"' ? '"""' : "'''";
-      if (line.startsWith(delimiter, index)) {
-        state = delimiter;
-        index += 3;
-        continue;
-      }
-      index = skipSingleLineString(line, index);
-      continue;
-    }
-    index++;
-  }
-  return state;
-}
-
-/**
- * Locate every managed block in an existing config.
- *
- * A region exists only when a whole line (after trimming) IS the start marker
- * and a later whole line IS the end marker. Marker text behind a comment, or
- * inside a single- or multi-line TOML string, is string content rather than a
- * region. A start marker with no closing end marker is refused loudly:
- * appending a second block there would leave a config.toml that no longer
- * parses (a duplicate marketplace table), so the user has to remove the stray
- * marker by hand.
- */
-function findManagedRegions(configPath: string, content: string): ManagedRegion[] {
-  const regions: ManagedRegion[] = [];
-  let pendingStart: number | null = null;
-  let multiline: MultilineStringDelimiter | null = null;
-  let lineStart = 0;
-
-  while (lineStart <= content.length) {
-    const newline = content.indexOf("\n", lineStart);
-    const lineEnd = newline === -1 ? content.length : newline;
-    const rawLine = content.slice(lineStart, lineEnd);
-    const line = rawLine.trim();
-
-    if (multiline === null) {
-      if (line === MANAGED_START && pendingStart === null) {
-        pendingStart = lineStart;
-      } else if (line === MANAGED_END && pendingStart !== null) {
-        regions.push({ start: pendingStart, end: lineEnd });
-        pendingStart = null;
-      }
-    }
-    multiline = advanceMultilineStringState(rawLine, multiline);
-
-    if (newline === -1) break;
-    lineStart = newline + 1;
-  }
-
-  if (pendingStart !== null) {
-    throw new Error(
-      `The Codex config ${configPath} contains the rolebox start marker ` +
-        `${MANAGED_START} without a matching end marker ${MANAGED_END}. ` +
-        "Remove the stray start marker by hand, then re-run `rolebox sync codex`.",
-    );
-  }
-  return regions;
 }
 
 // ── Bundle contents ─────────────────────────────────────────────────────────
@@ -413,37 +279,7 @@ export function registerCodexPlugin(
   configPath: string,
   marketplaceDir: string,
 ): { changed: boolean } {
-  const block = buildManagedBlock(marketplaceDir);
-  const existing = existsSync(configPath) ? readFileSync(configPath, "utf-8") : null;
-
-  if (existing === null) {
-    mkdirSync(dirname(configPath), { recursive: true });
-    writeFileSync(configPath, `${block}\n`, "utf-8");
-    return { changed: true };
-  }
-
-  const regions = findManagedRegions(configPath, existing);
-  let next: string;
-  if (regions.length > 0) {
-    next = existing.slice(0, regions[0].start) + block;
-    let after = regions[0].end;
-    for (const region of regions.slice(1)) {
-      next += existing.slice(after, region.start);
-      after = region.end + (existing[region.end] === "\n" ? 1 : 0);
-    }
-    next += existing.slice(after);
-  } else {
-    // Exactly one leading newline: it terminates a non-empty file that lacks a
-    // trailing one, and forms the blank line before the block otherwise. It is
-    // also the single separator unregister removes, so the pre-existing bytes
-    // come back either way.
-    const separator = existing.length === 0 ? "" : "\n";
-    next = `${existing}${separator}${block}\n`;
-  }
-
-  if (next === existing) return { changed: false };
-  writeFileSync(configPath, next, "utf-8");
-  return { changed: true };
+  return applyManagedBlock(configPath, buildManagedBlock(marketplaceDir), CODEX_MANAGED_MARKERS);
 }
 
 /**
@@ -457,33 +293,5 @@ export function registerCodexPlugin(
  * unclosed block has no reliable extent to remove.
  */
 export function unregisterCodexPlugin(configPath: string): { changed: boolean } {
-  if (!existsSync(configPath)) return { changed: false };
-  const existing = readFileSync(configPath, "utf-8");
-  const regions = findManagedRegions(configPath, existing);
-  if (regions.length === 0) return { changed: false };
-
-  // Remove from the end so the earlier regions' offsets stay valid.
-  let next = existing;
-  for (let i = regions.length - 1; i >= 0; i--) {
-    let start = regions[i].start;
-    let end = regions[i].end;
-    if (next[end] === "\n") end++;
-    // Drop the single separator newline the append introduced before the first
-    // block, but never the LF half of a CRLF the block did not introduce: that
-    // would leave a lone \r behind.
-    if (
-      i === 0 &&
-      start > 0 &&
-      next[start - 1] === "\n" &&
-      (start === 1 || next[start - 2] !== "\r")
-    ) {
-      start -= 1;
-    }
-
-    next = next.slice(0, start) + next.slice(end);
-  }
-
-  if (next === existing) return { changed: false };
-  writeFileSync(configPath, next, "utf-8");
-  return { changed: true };
+  return removeManagedBlock(configPath, CODEX_MANAGED_MARKERS);
 }

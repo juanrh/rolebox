@@ -43,6 +43,10 @@ export const MODEL_SOURCES: Record<SyncTarget, ModelSource> = {
   // `model_providers`) and rolebox has no TOML reader, so it is served from
   // opencode exactly as the pre-restructure dispatcher did.
   [SyncTarget.Codex]: { seed: SyncTarget.Opencode },
+  // Vibe selects its models in `<vibeHome>/config.toml` (`[[models]]` presets,
+  // `active_model`) and rolebox has no TOML reader, so it is served from
+  // opencode exactly like Codex.
+  [SyncTarget.Vibe]: { seed: SyncTarget.Opencode },
 };
 
 // ── Dispatch ──────────────────────────────────────────────────────

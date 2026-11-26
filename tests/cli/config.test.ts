@@ -10,6 +10,7 @@ import type { PromptApi } from "../../src/cli/pick.ts";
 
 let tmpDir: string;
 let savedCodexHome: string | undefined;
+let savedVibeHome: string | undefined;
 
 beforeEach(() => {
   tmpDir = mkdtempSync(join(tmpdir(), "rolebox-config-test-"));
@@ -18,12 +19,16 @@ beforeEach(() => {
   // not resolve (or stat) a developer's real ~/.codex.
   savedCodexHome = process.env.CODEX_HOME;
   process.env.CODEX_HOME = join(tmpDir, "codex");
+  savedVibeHome = process.env.VIBE_HOME;
+  process.env.VIBE_HOME = join(tmpDir, "vibe");
 });
 
 afterEach(() => {
   delete process.env.XDG_CONFIG_HOME;
   if (savedCodexHome === undefined) delete process.env.CODEX_HOME;
   else process.env.CODEX_HOME = savedCodexHome;
+  if (savedVibeHome === undefined) delete process.env.VIBE_HOME;
+  else process.env.VIBE_HOME = savedVibeHome;
   rmSync(tmpDir, { recursive: true, force: true });
 });
 
@@ -644,7 +649,7 @@ describe("config target menu (interactive)", () => {
     const target = await resolveConfigTarget({ interactive: true, prompts });
 
     expect(target).toBe("opencode");
-    expect(offeredTargets(select)).toEqual(["opencode", "pi", "dsh", "codex"]);
+    expect(offeredTargets(select)).toEqual(["opencode", "pi", "dsh", "codex", "vibe"]);
   });
 
   it("(b) selecting pi resolves the role dir under the pi root", async () => {
@@ -685,7 +690,7 @@ describe("config target menu (interactive)", () => {
     const target = await resolveConfigTarget({ interactive: true, role: "ghost-role", prompts });
 
     expect(target).toBe("dsh");
-    expect(offeredTargets(select)).toEqual(["opencode", "pi", "dsh", "codex"]);
+    expect(offeredTargets(select)).toEqual(["opencode", "pi", "dsh", "codex", "vibe"]);
   });
 
   it("(b3) run() with an explicit --target writes through that target's sync root", async () => {

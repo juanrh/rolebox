@@ -80,6 +80,24 @@ these opencode-only subsystems remain out of scope:
 - Role switching (no in-session active-role switcher)
 - Hooks-driven activation (`chat.message` / `session.idle` / tool interception) in native UI conversations; managed app-server events do not supply those host hooks
 
+## Vibe (MCP) parity
+
+The Vibe MCP runtime registers the canonical intersection tools plus the gated
+computer-use and browser families — no session tools, dispatch or graph tools.
+Public roles become native Vibe agents; private children stay rolebox-internal
+with no host execution transport. See [compatibility.md](compatibility.md) and
+[vibe.md](vibe.md) for the supported surface.
+
+- Vibe documents no programmatic session protocol, so rolebox cannot browse,
+  fork or spawn Vibe sessions; session-dependent features (dispatch, the
+  declared-graph engine, team workflows) are unavailable on this target.
+- MCP metadata does not identify the calling native agent, so role-scoped asset
+  tools run without per-session role attribution; the generated agent
+  instructions carry the role identity instead.
+- Vibe agent files expose no sampling parameters or model variants; a
+  provider-qualified role model cannot be projected to a Vibe model alias and
+  is omitted with a warning.
+
 ## hashline_edit concurrency semantics
 
 `hashline_edit` serializes edits to the same file **within a single process** (per-path async mutex covering the full read → validate → compute → recheck → write cycle) and rejects duplicate file paths in one batch, folding them by filesystem identity (dev+inode) so symlink aliases, hardlink aliases, case aliases on case-insensitive filesystems (darwin/win32), and trailing-slash spellings of the same file are all caught.
