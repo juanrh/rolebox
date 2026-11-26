@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { homedir, tmpdir } from "node:os";
 import { vibePlatformPaths } from "../../src/platform/paths.ts";
 import { PLATFORM_REGISTRY, getPlatformDescriptor } from "../../src/platform/registry.ts";
@@ -173,8 +174,10 @@ describe("vibe platform descriptor", () => {
     expect(agent).toContain("Review with evidence.");
     expect(lines.some(entry => entry.line.includes("registered in"))).toBe(true);
     expect(lines.some(entry => entry.line.includes("1 public roles"))).toBe(true);
-    // The sync target directory had no built dist/ in this sandbox — the
-    // entry-missing warning is expected and informational.
-    expect(lines.some(entry => entry.level === "warn" && entry.line.includes("does not exist"))).toBe(true);
+    // The entry-missing warning is emitted only when the package has not
+    // been built; assert it matches the actual state of dist/entries/vibe.js.
+    const serverEntry = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "dist", "entries", "vibe.js");
+    expect(lines.some(entry => entry.level === "warn" && entry.line.includes("does not exist")))
+      .toBe(!existsSync(serverEntry));
   });
 });

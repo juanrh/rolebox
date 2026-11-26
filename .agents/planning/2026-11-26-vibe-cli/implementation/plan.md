@@ -2,14 +2,14 @@
 
 ## Checklist
 
-- [ ] Step 1: Shared managed-config-block module + codex refactor
-- [ ] Step 2: Vibe paths, capabilities, constants, model source
-- [ ] Step 3: Vibe MCP registration module
-- [ ] Step 4: Vibe native agent sync
-- [ ] Step 5: Vibe runtime + entry point + package export
-- [ ] Step 6: Registry descriptor + CLI wiring
-- [ ] Step 7: Documentation
-- [ ] Step 8: Full verification pass
+- [x] Step 1: Shared managed-config-block module + codex refactor
+- [x] Step 2: Vibe paths, capabilities, constants, model source
+- [x] Step 3: Vibe MCP registration module
+- [x] Step 4: Vibe native agent sync
+- [x] Step 5: Vibe runtime + entry point + package export
+- [x] Step 6: Registry descriptor + CLI wiring
+- [x] Step 7: Documentation
+- [x] Step 8: Full verification pass
 
 ## Working agreements
 

@@ -83,7 +83,7 @@ describe("codexPlatformPaths", () => {
 
 describe("codex registry descriptor", () => {
   it("is registered after dsh with the Codex label and resolvable by id", () => {
-    expect(PLATFORM_REGISTRY.map((p) => p.id)).toEqual(["opencode", "pi", "dsh", "codex"]);
+    expect(PLATFORM_REGISTRY.map((p) => p.id)).toEqual(["opencode", "pi", "dsh", "codex", "vibe"]);
 
     const descriptor = getPlatformDescriptor("codex");
     expect(descriptor.id).toBe("codex");

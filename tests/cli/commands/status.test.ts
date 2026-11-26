@@ -22,6 +22,7 @@ function targetBase(target: string): string {
   if (target === "pi") return join(xdg, "pi-agent");
   if (target === "dsh") return join(xdg, "dsh");
   if (target === "codex") return join(xdg, "codex");
+  if (target === "vibe") return join(xdg, "vibe");
   throw new Error(`Unknown sync target: "${target}". Supported targets: opencode, pi, dsh, codex`);
 }
 
@@ -40,6 +41,7 @@ afterAll(() => {
 
 let tmpDir: string;
 let savedCodexHome: string | undefined;
+let savedVibeHome: string | undefined;
 let savedHome: string | undefined;
 let savedOpencodeConfigDir: string | undefined;
 
@@ -54,6 +56,10 @@ beforeEach(() => {
   // redirect both away from a developer's real home too.
   savedCodexHome = process.env.CODEX_HOME;
   process.env.CODEX_HOME = join(tmpDir, "codex");
+  // The vibe descriptor reads <configDir>/config.toml under $VIBE_HOME, so
+  // redirect it the same way and never at a developer's real ~/.vibe.
+  savedVibeHome = process.env.VIBE_HOME;
+  process.env.VIBE_HOME = join(tmpDir, "vibe");
   savedHome = process.env.HOME;
   process.env.HOME = join(tmpDir, "home");
   savedOpencodeConfigDir = process.env.OPENCODE_CONFIG_DIR;
@@ -65,6 +71,8 @@ afterEach(() => {
   delete process.env.XDG_DATA_HOME;
   if (savedCodexHome === undefined) delete process.env.CODEX_HOME;
   else process.env.CODEX_HOME = savedCodexHome;
+  if (savedVibeHome === undefined) delete process.env.VIBE_HOME;
+  else process.env.VIBE_HOME = savedVibeHome;
   if (savedHome === undefined) delete process.env.HOME;
   else process.env.HOME = savedHome;
   if (savedOpencodeConfigDir === undefined) delete process.env.OPENCODE_CONFIG_DIR;
@@ -238,7 +246,7 @@ describe("status", () => {
     // Every registered sync target must be reported.
     expect(parsed.targets).toBeInstanceOf(Array);
     const targetNames = parsed.targets.map((t: any) => t.target).sort();
-    expect(targetNames).toEqual(["codex", "dsh", "opencode", "pi"]);
+    expect(targetNames).toEqual(["codex", "dsh", "opencode", "pi", "vibe"]);
     for (const t of parsed.targets) {
       expect(typeof t.syncTarget).toBe("string");
       expect(typeof t.present).toBe("boolean");
