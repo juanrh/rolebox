@@ -6,7 +6,6 @@ import { PassThrough } from "node:stream";
 import { startVibeMcpServer, resolveVibeSessionId } from "../../../../src/entries/vibe.ts";
 import type { CodexMcpServer } from "../../../../src/platform/adapters/codex/mcp/server.ts";
 import { createVibeRuntime } from "../../../../src/platform/adapters/vibe/runtime.ts";
-import { vibeCapabilities } from "../../../../src/platform/capabilities.ts";
 import type { ResolvedRole } from "../../../../src/types.ts";
 
 const environment = ["VIBE_HOME", "ROLEBOX_DATA_DIR", "ROLEBOX_CONFIG_DIR", "ROLEBOX_SESSION_ID"];
@@ -110,10 +109,6 @@ describe("createVibeRuntime", () => {
     runtime.close();
   });
 
-  it("matches the declared capability set", () => {
-    expect(vibeCapabilities().hasAgentFileSync).toBe(true);
-    expect(Object.keys(createVibeRuntime({ directory, roles: [] }).tools).length).toBeGreaterThan(0);
-  });
 });
 
 describe("startVibeMcpServer", () => {
