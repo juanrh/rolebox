@@ -12,8 +12,8 @@ code programmed against `src/platform/ports/` contracts.
 
 | Path | What lives there |
 | --- | --- |
-| `src/entries/` | Published harness entry points: `opencode.ts`, `opencode2.ts`, `pi.ts`, `dsh.ts`, `codex.ts` |
-| `src/platform/` | `ports/` (session/tool/event/registration contracts), `system/`, `model-catalog/`, `worker-tools/`, `adapters/{dsh,pi,codex,opencode,opencode2}/` |
+| `src/entries/` | Published harness entry points: `opencode.ts`, `opencode2.ts`, `pi.ts`, `dsh.ts`, `codex.ts`, `vibe.ts` |
+| `src/platform/` | `ports/` (session/tool/event/registration contracts), `system/`, `model-catalog/`, `worker-tools/`, `adapters/{dsh,pi,codex,opencode,opencode2,vibe}/` |
 | `src/loader/`, `src/resolver/`, `src/sync/` | Role YAML loading, role/asset resolution, skill-symlink and agent-file sync |
 | `src/prompt/` | System prompt assembly (role prompt, memory summaries, workflow guidance) |
 | `src/graph/` | Multi-agent graph engine: compiler → immutable plan → run → attempt → outcome → acceptance; durable SQLite state in `store/`+`ledger/` |
@@ -28,7 +28,7 @@ code programmed against `src/platform/ports/` contracts.
 | `docs/` | ~37 feature documents — prefer these over re-deriving behavior from source |
 
 Package exports (`package.json`) are the only public surface: `.` (opencode),
-`./server` (opencode2), `./pi`, `./dsh`, `./codex`, `./tui`, `./client`, and the
+`./server` (opencode2), `./pi`, `./dsh`, `./codex`, `./vibe`, `./tui`, `./client`, and the
 `rolebox` bin. Do not add barrels to shorten paths; use direct imports.
 
 Graph engine quick facts: a declaration is compiled once into an immutable plan;

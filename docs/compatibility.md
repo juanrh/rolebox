@@ -19,6 +19,7 @@ Each target has a minimum version, and each minimum is a runtime contract rather
 | [pi](https://pi.dev) | `0.86.0` | the `@earendil-works/pi-coding-agent` peer range |
 | [dsh](https://www.npmjs.com/package/@deepseek-ai/dsh) | `0.2.1-alpha.3` | the subagent contract below |
 | Codex | capability-based; protocol checked against `0.166.0-alpha.5.1` | session tools need app-server; delegation also needs sandbox metadata, exec-server, environment binding and dynamic tools; no Codex npm dependency |
+| Vibe | capability-based; documented surfaces only (`[[mcp_servers]]` stdio, `agents/` TOML, `skills/`) | no npm dependency; no host session protocol, so session/dispatch/graph features stay off |
 
 rolebox's manifest also declares the `@deepseek-ai/cordis` peer (`4.0.2`) its dsh entry is built against.
 
@@ -71,6 +72,16 @@ and `graph_wait` is the bounded fallback when the channel is unavailable. An ext
 UI-owned chat still cannot be woken without its own shared connection. See
 [codex.md](codex.md).
 
+## Vibe parity status
+
+Rolebox's Vibe integration (`src/platform/adapters/vibe/`, served by
+`src/entries/vibe.ts`) supplies public native-agent files, user-level skills
+and the canonical MCP tool set. It registers the intersection tools plus the
+gated computer-use and browser families — no session tools, dispatch or graph
+tools, because Vibe documents no programmatic session protocol. Parity is
+enforced by `tests/platform/vibe-platform.test.ts` and the adapter suites
+under `tests/platform/adapters/vibe/`. See [vibe.md](vibe.md).
+
 ## opencode v2
 
 opencode v2 (CLI `@opencode/cli@2.0.18`, plugin API `@opencode/plugin@2.0.18`) is a separate product from the 1.x line and loads plugins through a different contract. rolebox serves both paths from one package; they are independent, and **the opencode 1.x entry contract, package root shape and every surface it already exposed are unchanged**. What both opencode entries now additionally register is the declared-graph tool face — `graph_declare`, `graph_submit_outcome`, `graph_status`, `graph_audit` and `graph_control` — assembled by a shared host capability layer.
@@ -103,7 +114,7 @@ Both entries run the same initialization (log directory, rolebox directories, ro
 - **Shutdown** — the `Cleanup` that `setup` returns aborts the event relay, disposes every registration and the handler map, and flushes loop, function and signal state (`src/entries/opencode2.ts`).
 - **Failure containment** — a registration the host rejects is logged and that one surface is skipped, and a role file that fails to load is logged and leaves the plugin with zero roles. The event stream is contained the same way: a `subscribe` that throws is logged, that stream is skipped and every other surface still registers. `setup` rejects only when the service graph itself cannot be built.
 
-### opencode v2 limitations
+## opencode v2 limitations
 
 - **The plugin session surface is reduced.** v2's plugin session domain exposes create/get/switchAgent/switchModel/prompt/generate/command/synthetic/interrupt/update/move/wait/context only. Session listing, child-session listing, todos, diff, fork, status polling and compaction are degraded accordingly in `src/platform/adapters/opencode2/session.ts`: `list`, `children`, `todo` and `diff` return empty, `fork` and `status` return null, and `compact` returns false — never throwing. (The declared-graph host's own execution reading does not go through that adapter: it reads the raw session domain and the event stream — see the last limitation below.) The matching tools (`session_list`, `session_diff`, `session_fork`, …) still register but have nothing to report on v2. **A created session cannot be given a parent either:** `SessionCreateInput` has no `parentID` field, so the adapter's `create()` drops it (`src/platform/adapters/opencode2/session.ts`), while the dispatch launcher passes `parentID: parentContext.sessionID` for every task that does not set `noParentInherit` (`src/dispatch/core/task-launcher.ts`, `src/dispatch/core/sync-executor.ts`). On v2 every dispatched session therefore starts without the parent conversation's history — it behaves as if `noParentInherit` were set. Dispatch itself still works, because it needs session create, prompt and interrupt.
 - **Agents register in process; there is no agent file sync.** v2's agent editor registers agents live, so rolebox passes no agent-file registrar and writes no agent files (`hasAgentFileSync: false`). Roles reach v2 only through the plugin's own in-process registration.
