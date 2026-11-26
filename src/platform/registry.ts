@@ -27,6 +27,7 @@ import {
   piPlatformPaths,
   dshPlatformPaths,
   codexPlatformPaths,
+  vibePlatformPaths,
   type PlatformPaths,
 } from "./paths.ts";
 import { PLUGIN_ID } from "../constants.ts";
@@ -36,11 +37,14 @@ import {
   piCapabilities,
   dshCapabilities,
   codexCapabilities,
+  vibeCapabilities,
   minimalCapabilities,
   type PlatformCapabilities,
 } from "./capabilities.ts";
 import { createSubLogger } from "../logger.ts";
 import { syncCodexTarget } from "./adapters/codex/installation/sync.ts";
+import { syncVibeTarget } from "./adapters/vibe/installation/sync.ts";
+import { VIBE_MANAGED_START } from "./adapters/vibe/installation/mcp-registration.ts";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -324,6 +328,41 @@ const codexDescriptor: PlatformDescriptor = {
   },
 };
 
+const vibeDescriptor: PlatformDescriptor = {
+  id: "vibe",
+  label: "Vibe",
+  paths: vibePlatformPaths,
+  capabilities: vibeCapabilities,
+  // Vibe is extended through its config.toml MCP table and native agent
+  // files, not role symlinks alone: this hook registers the stdio MCP
+  // server and syncs the native agent files.
+  postSync: syncVibeTarget,
+  // Vibe registration is detected in `<vibeHome>/config.toml`: the managed
+  // block `rolebox sync vibe` writes. A missing or unreadable config reports
+  // unregistered — detection never throws.
+  detectIntegration() {
+    const configPath = join(vibePlatformPaths().configDir, "config.toml");
+    let registered = false;
+    try {
+      if (existsSync(configPath)) {
+        registered = readFileSync(configPath, "utf-8")
+          .split("\n")
+          .some(line => line.trim() === VIBE_MANAGED_START);
+      }
+    } catch {
+      registered = false;
+    }
+    return {
+      mechanism: "MCP server",
+      registered,
+      detail: registered ? "registered" : "not found in vibe config",
+      hint: registered
+        ? undefined
+        : `Run \`rolebox sync vibe\` to register the rolebox MCP server in ${tildify(configPath)}`,
+    };
+  },
+};
+
 // ── Registry ─────────────────────────────────────────────────────────────────
 
 /** Every host platform rolebox can target. Order = CLI display order. */
@@ -332,6 +371,7 @@ export const PLATFORM_REGISTRY: readonly PlatformDescriptor[] = [
   piDescriptor,
   dshDescriptor,
   codexDescriptor,
+  vibeDescriptor,
 ];
 
 /**

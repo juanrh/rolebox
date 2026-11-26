@@ -40,6 +40,10 @@
       "types": "./dist/entries/codex.d.ts",
       "import": "./dist/entries/codex.js"
     },
+    "./vibe": {
+      "types": "./dist/entries/vibe.d.ts",
+      "import": "./dist/entries/vibe.js"
+    },
     "./dsh/cordis.patch.yml": "./dsh/cordis.patch.yml",
     "./dsh/package.json": "./package.json",
     "./client": {

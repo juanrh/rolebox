@@ -225,12 +225,12 @@ export async function sync(target: string, relink = false): Promise<void> {
 export default defineCommand({
   meta: {
     name: "sync",
-    description: "Deploy roles to target tool (opencode | pi | dsh | codex)",
+    description: "Deploy roles to target tool (opencode | pi | dsh | codex | vibe)",
   },
   args: {
     target: {
       type: "positional",
-      description: "Sync target: opencode, pi, dsh, or codex (default: opencode)",
+      description: "Sync target: opencode, pi, dsh, codex, or vibe (default: opencode)",
       default: SyncTarget.Opencode,
     },
     relink: {

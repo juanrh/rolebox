@@ -1,8 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir, tmpdir } from "node:os";
 import { vibePlatformPaths } from "../../src/platform/paths.ts";
+import { PLATFORM_REGISTRY, getPlatformDescriptor } from "../../src/platform/registry.ts";
+import {
+  registerVibeMcpServer,
+  vibeConfigPath,
+  VIBE_MANAGED_START,
+} from "../../src/platform/adapters/vibe/installation/mcp-registration.ts";
 import { vibeCapabilities } from "../../src/platform/capabilities.ts";
 import { SyncTarget, SYNC_TARGET_VALUES } from "../../src/constants.ts";
 import { MODEL_SOURCES } from "../../src/platform/model-catalog/index.ts";
@@ -100,5 +106,75 @@ describe("vibe sync target constants", () => {
     expect(SYNC_TARGET_VALUES).toContain("vibe");
     expect(MODEL_SOURCES[SyncTarget.Vibe].seed).toBe(SyncTarget.Opencode);
     expect(MODEL_SOURCES[SyncTarget.Vibe].read).toBeUndefined();
+  });
+});
+
+describe("vibe platform descriptor", () => {
+  const ORIGINAL_DATA_DIR = process.env.ROLEBOX_DATA_DIR;
+  const ORIGINAL_CONFIG_DIR = process.env.ROLEBOX_CONFIG_DIR;
+
+  afterEach(() => {
+    restoreEnv("ROLEBOX_DATA_DIR", ORIGINAL_DATA_DIR);
+    restoreEnv("ROLEBOX_CONFIG_DIR", ORIGINAL_CONFIG_DIR);
+  });
+
+  it("is registered with its own paths and capabilities", () => {
+    const descriptor = getPlatformDescriptor("vibe");
+
+    expect(descriptor.label).toBe("Vibe");
+    expect(descriptor.paths()).toEqual(vibePlatformPaths());
+    expect(descriptor.capabilities()).toEqual(vibeCapabilities());
+    expect(PLATFORM_REGISTRY.map(platform => platform.id)).toContain("vibe");
+  });
+
+  it("detects registration from the managed config block", () => {
+    const descriptor = getPlatformDescriptor("vibe");
+
+    expect(descriptor.detectIntegration()!.registered).toBe(false);
+    expect(descriptor.detectIntegration()!.detail).toBe("not found in vibe config");
+
+    registerVibeMcpServer(vibeConfigPath(vibeHome), join(vibeHome, "server.js"));
+    const integration = descriptor.detectIntegration()!;
+    expect(integration.registered).toBe(true);
+    expect(integration.detail).toBe("registered");
+    expect(integration.mechanism).toBe("MCP server");
+  });
+
+  it("detects nothing when the managed marker only appears inside a string", () => {
+    writeFileSync(
+      vibeConfigPath(vibeHome),
+      `instructions = "${VIBE_MANAGED_START}"\n`,
+      "utf-8",
+    );
+    expect(getPlatformDescriptor("vibe").detectIntegration()!.registered).toBe(false);
+  });
+
+  it("postSync registers the MCP server and syncs native agents", async () => {
+    process.env.ROLEBOX_DATA_DIR = join(vibeHome, "data");
+    process.env.ROLEBOX_CONFIG_DIR = join(vibeHome, "config");
+    const roleDir = join(vibeHome, "rolebox", "reviewer");
+    mkdirSync(roleDir, { recursive: true });
+    writeFileSync(join(roleDir, "role.yaml"), [
+      "name: Reviewer", "description: Reviews changes.", "prompt: Review with evidence.", "",
+    ].join("\n"));
+
+    const lines: Array<{ line: string; level?: string }> = [];
+    await getPlatformDescriptor("vibe").postSync!({
+      syncTarget: join(vibeHome, "rolebox"),
+      report: (line, level) => lines.push({ line, level }),
+    });
+
+    const config = readFileSync(vibeConfigPath(vibeHome), "utf-8");
+    expect(config).toContain('name = "rolebox"');
+    expect(config).toContain('transport = "stdio"');
+    expect(config).toContain("dist/entries/vibe.js");
+    expect(readdirSync(join(vibeHome, "agents"))).toContain("rolebox--reviewer.toml");
+    const agent = readFileSync(join(vibeHome, "agents", "rolebox--reviewer.toml"), "utf-8");
+    expect(agent).toContain("Review with evidence.");
+    expect(lines.some(entry => entry.line.includes("registered in"))).toBe(true);
+    expect(lines.some(entry => entry.line.includes("1 public roles"))).toBe(true);
+    // The sync target directory had no built dist/ in this sandbox — the
+    // entry-missing warning is expected and informational.
+    expect(lines.some(entry => entry.level === "warn" && entry.line.includes("does not exist"))).toBe(true);
   });
 });

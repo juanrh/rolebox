@@ -122,6 +122,7 @@ export function getRolesDir(): string {
  * - `"pi"` → `{$PI_CODING_AGENT_DIR or ~/.pi/agent}/rolebox`
  * - `"dsh"` → `{$DSH_HOME or ~/.dsh}/rolebox`
  * - `"codex"` → `{$CODEX_HOME or ~/.codex}/rolebox`
+ * - `"vibe"` → `{$VIBE_HOME or ~/.vibe}/rolebox`
  *
  * Each path matches where the corresponding runtime entry point resolves
  * its `roleboxDir` (see `resolveRoleboxDirectories` in platform/factory.ts).
@@ -137,6 +138,7 @@ export function getSyncTarget(target: string): string {
  * - `pi` → `$PI_CODING_AGENT_DIR` or `~/.pi/agent`
  * - `dsh` → `$DSH_HOME` or `~/.dsh`
  * - `codex` → `$CODEX_HOME` or `~/.codex`
+ * - `vibe` → `$VIBE_HOME` or `~/.vibe`
  */
 export function getTargetConfigDir(target: string): string {
   return resolveSyncTargetPaths(target).configDir;
@@ -149,6 +151,7 @@ export function getTargetConfigDir(target: string): string {
  * - `pi` → `{~/.pi/agent}/skills`
  * - `dsh` → `{~/.dsh}/skills`
  * - `codex` → `{$CODEX_HOME or ~/.codex}/skills`
+ * - `vibe` → `{$VIBE_HOME or ~/.vibe}/skills`
  */
 export function getTargetSkillsDir(target: string): string {
   return resolveSyncTargetPaths(target).skillsDir;
